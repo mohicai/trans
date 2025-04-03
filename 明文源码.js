@@ -22,9 +22,9 @@ const worker_default = {
             if (!upgradeHeader || upgradeHeader !== "websocket") {
                 const url = new URL(request.url);
                 switch (url.pathname) {
-                    case "/link":
+                    case "/Monchan":
                         const host = request.headers.get('Host');
-                        return new Response(`trojan://ca110us@${host}:443/?type=ws&host=${host}&security=tls`, {
+                        return new Response(`trojan://Monchan@${host}:443/?type=ws&host=${host}&security=tls`, {
                             status: 200,
                             headers: {
                                 "Content-Type": "text/plain;charset=utf-8",
