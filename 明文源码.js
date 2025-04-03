@@ -3,6 +3,7 @@ import { connect } from "cloudflare:sockets";
 let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
 let proxyIP = "";
 
+
 if (!isValidSHA224(sha224Password)) {
     throw new Error('sha224Password is not valid');
 }
