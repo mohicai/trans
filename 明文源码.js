@@ -25,7 +25,7 @@ const worker_default = {
                 switch (url.pathname) {
                     case "/Monchan":
                         const host = request.headers.get('Host');
-                        return new Response(`trojan://Monchan@${host}:443/?type=ws&host=${host}&security=tls\ntrojan://Monchan@104.19.250.20:2096/?type=ws&host=${host}&security=tls`, {
+                        return new Response(`trojan://Monchan@${host}:443/?type=ws&host=${host}&security=tls\ntrojan://Monchan@warps.dynv6.net:443/?type=ws&host=${host}&security=tls`, {
                             status: 200,
                             headers: {
                                 "Content-Type": "text/plain;charset=utf-8",
