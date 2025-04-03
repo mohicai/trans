@@ -1,7 +1,7 @@
 // src/worker.js
 import { connect } from "cloudflare:sockets";
 let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
-let proxyIP = "129.151.225.228";
+let proxyIP = "";
 
 if (!isValidSHA224(sha224Password)) {
     throw new Error('sha224Password is not valid');
@@ -24,7 +24,7 @@ const worker_default = {
                 switch (url.pathname) {
                     case "/Monchan":
                         const host = request.headers.get('Host');
-                        return new Response(`trojan://Monchan@${host}:443/?type=ws&host=${host}&security=tls`, {
+                        return new Response(`trojan://Monchan@${host}:443/?type=ws&host=${host}&security=tls\ntrojan://Monchan@warps.dynv6.net:443/?type=ws&host=${host}&security=tls`, {
                             status: 200,
                             headers: {
                                 "Content-Type": "text/plain;charset=utf-8",
