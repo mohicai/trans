@@ -30,6 +30,31 @@ async function kvPutProxyIP(kv, ip) {
 // -------------------- 新增结束 --------------------
 
 
+// ------------- 域名白名单缓存 -------------
+const PROXY_LIST_KEY = 'direct_proxy_list';
+const PROXY_LIST_TTL = 7 * 24 * 3600;   // 7 天
+
+/** 返回 Set<String>：需要强制走 proxyIP 的域名/IP */
+async function getProxySet(kv) {
+  try {
+    const raw = await kv.get(PROXY_LIST_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch { return new Set(); }
+}
+
+/** 把新域名/IP 追加进 KV（去重） */
+async function addProxyHost(kv, host) {
+  const set = await getProxySet(kv);
+  if (set.has(host)) return;
+  set.add(host);
+  await kv.put(PROXY_LIST_KEY, JSON.stringify([...set]), {
+    expirationTtl: PROXY_LIST_TTL
+  });
+}
+
+
+
 
 // ----------- 无脑写入测试 -----------
 async function forceWrite(request, env) {
@@ -204,7 +229,7 @@ async function trojanOverWSHandler(request) {
                 throw new Error(message);
                 return;
             }
-            handleTCPOutBound(remoteSocketWapper, addressRemote, portRemote, rawClientData, webSocket, log);
+            handleTCPOutBound(remoteSocketWapper, addressRemote, portRemote, rawClientData, webSocket, log, env, ctx);
         },
         close() {
             log(`readableWebSocketStream is closed`);
@@ -318,7 +343,17 @@ async function parseTrojanHeader(buffer) {
     };
 }
 
-async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawClientData, webSocket, log) {
+async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawClientData, webSocket, log,env,ctx) {
+    
+    // 如果 KV 白名单命中，直接连 proxyIP，不重试真实 IP
+const proxySet = await getProxySet(env.tran);
+if (proxySet.has(addressRemote)) {
+  log(`hit proxy list, direct to proxyIP`);
+  const tcpSocket = await connectAndWrite(proxyIP, portRemote);
+  return remoteSocketToWS(tcpSocket, webSocket, null, log);
+}
+    
+    
     async function connectAndWrite(address, port) {
         const tcpSocket2 = connect({
             hostname: address,
@@ -333,6 +368,12 @@ async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawCli
     }
     async function retry() {
         const tcpSocket2 = await connectAndWrite(proxyIP || addressRemote, portRemote);
+        
+        
+        // 记录：这个域名/IP 以后直接走 proxyIP
+ctx.waitUntil(addProxyHost(env.tran, addressRemote));
+        
+        
         tcpSocket2.closed.catch((error) => {
             console.log("retry tcpSocket closed error", error);
         }).finally(() => {
