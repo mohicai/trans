@@ -113,7 +113,7 @@ const worker_default = {
     
     /* ---------- 新增：后台刷新 proxyIP ---------- */
  
-       ctx.waitUntil(refreshProxyIP(a));   // 非阻塞
+       ctx.waitUntil(refreshProxyIP(env.tran));   // 非阻塞
     if (cachedProxyIP) proxyIP = cachedProxyIP; // 如有缓存优先用
     /* ---------- 新增结束 ------------------------ */
 
