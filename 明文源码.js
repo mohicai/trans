@@ -123,10 +123,10 @@ const worker_default = {
 
 
 
-//const url = new URL(request.url);
-//switch (url.pathname) {
- // case '/write':                       // ← 新增
-   // return forceWrite(request, env);
+const url = new URL(request.url);
+switch (url.pathname) {
+  case '/write':                        //← 新增
+    return forceWrite(request, env);
   // 其他 case …
 //}
 
