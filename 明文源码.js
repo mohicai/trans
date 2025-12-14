@@ -1,7 +1,62 @@
 // src/worker.js
 import { connect } from "cloudflare:sockets";
 let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
-let proxyIP = "129.146.46.164";
+let proxyIP = "";
+
+
+// -------------------- 新增：动态解析 proxyip.cmliussss.net --------------------
+const PROXY_HOST = 'proxyip.cmliussss.net';
+const PROBE_PORT = 443;          // 测 443 端口
+const PROBE_TIMEOUT = 3000;      // 3 s 超时
+const CACHE_TTL = 3600_000;      // 1 h
+let cachedProxyIP = null;        // 上一次成功 IP
+let lastUpdateTs = 0;            // 时间戳
+
+/** 并发探测，返回第一个能通的 IP */
+async function pickAliveIP(ips) {
+  const testOne = ip => new Promise(r => {
+    const t = setTimeout(() => r(false), PROBE_TIMEOUT);
+    connect({ hostname: ip, port: PROBE_PORT })
+      .opened.then(() => { clearTimeout(t); r(ip); })
+      .catch(() => { clearTimeout(t); r(false); });
+  });
+  // 并发 6 个，顺序返回第一个成功
+  for (let i = 0; i < ips.length; i += 6) {
+    const batch = ips.slice(i, i + 6).map(testOne);
+    const ok = await Promise.race(batch);          // 只要一个通就返回
+    if (ok) return ok;
+  }
+  return null;
+}
+
+/** 冷启动或过期时刷新 proxyIP */
+async function refreshProxyIP() {
+  const now = Date.now();
+  if (now - lastUpdateTs < CACHE_TTL) return;     // 1 h 内直接复用
+  try {
+    // 用 Cloudflare 自带的 DNS over HTTPS
+    const resp = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${PROXY_HOST}&type=A`,
+      { headers: { Accept: 'application/dns-json' } }
+    );
+    const data = await resp.json();
+    const ips = (data.Answer || [])
+      .filter(r => r.type === 1)   // A 记录
+      .map(r => r.data);
+    if (ips.length) {
+      const ok = await pickAliveIP(ips);
+      if (ok) {
+        cachedProxyIP = ok;
+        lastUpdateTs = now;
+         console.log(`[refreshProxyIP] picked ${ok}`);
+      }
+    }
+  } catch (e) {
+    console.log('[refreshProxyIP] err', e);
+  }
+}
+// -------------------- 新增结束 --------------------
+
 
 
 if (!isValidSHA224(sha224Password)) {
@@ -17,8 +72,15 @@ const worker_default = {
      */
     async fetch(request, env, ctx) {
         try {
-            proxyIP = env.PROXYIP || proxyIP;
+           // proxyIP = env.PROXYIP || proxyIP;
             sha224Password = env.SHA224PASS || sha224Password
+
+    /* ---------- 新增：后台刷新 proxyIP ---------- */
+    ctx.waitUntil(refreshProxyIP());   // 非阻塞
+    if (cachedProxyIP) proxyIP = cachedProxyIP; // 如有缓存优先用
+    /* ---------- 新增结束 ------------------------ */
+
+
             const upgradeHeader = request.headers.get("Upgrade");
             if (!upgradeHeader || upgradeHeader !== "websocket") {
                 const url = new URL(request.url);
