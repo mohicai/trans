@@ -6,7 +6,7 @@ let a = "";
 
 // -------------------- 新增：KV 缓存层 --------------------
 const KV_KEY = 'proxy_ip_cache';
-const KV_TTL_SEC = 3600; // 1 h
+const KV_TTL_SEC = 300; // 1 h
 
 async function kvGetProxyIP(kv) {
   try {
