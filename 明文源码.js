@@ -31,6 +31,15 @@ async function kvPutProxyIP(kv, ip) {
 
 
 
+// ----------- 无脑写入测试 -----------
+async function forceWrite(request, env) {
+  const kv = env.tran;                       // 绑定名
+  await kv.put('proxy_ip_cache', '{"ip":"104.21.123.45","ts":1712345678900}', { expirationTtl: 3600 });
+  return new Response('ok', { status: 200 });
+}
+
+
+
 
 // -------------------- 新增：动态解析 proxyip.cmliussss.net --------------------
 const PROXY_HOST = 'proxyip.cmliussss.net';
@@ -111,6 +120,18 @@ const worker_default = {
         try {
            // proxyIP = env.PROXYIP || proxyIP;
             sha224Password = env.SHA224PASS || sha224Password
+
+
+
+const url = new URL(request.url);
+switch (url.pathname) {
+  case '/write':                       // ← 新增
+    return forceWrite(request, env);
+  // 其他 case …
+}
+
+
+
     
     /* ---------- 新增：后台刷新 proxyIP ---------- */
  
