@@ -128,7 +128,7 @@ switch (url.pathname) {
   case '/write':                        //← 新增
     return forceWrite(request, env);
   // 其他 case …
-//}
+}
 
 
 
