@@ -6,7 +6,8 @@ let a = "tran";
 
 // -------------------- 新增：KV 缓存层 --------------------
 // 注意：env.PROXY_IP_KV 就是 wrangler.toml 里绑定的 KV 对象
-const KV_KEY = 'tran';
+const KV_KEY = 'proxy_ip_cache';
+
 const KV_TTL_SEC = 3600;            // 1 h
 
 /** 从 KV 读缓存，没有或过期返回 null */
