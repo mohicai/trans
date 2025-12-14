@@ -2,6 +2,33 @@
 import { connect } from "cloudflare:sockets";
 let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
 let proxyIP = "";
+let a = "tran";
+
+// -------------------- 新增：KV 缓存层 --------------------
+// 注意：env.PROXY_IP_KV 就是 wrangler.toml 里绑定的 KV 对象
+const KV_KEY = 'tran';
+const KV_TTL_SEC = 3600;            // 1 h
+
+/** 从 KV 读缓存，没有或过期返回 null */
+async function kvGetProxyIP(kv) {
+  try {
+    const raw = await kv.get(KV_KEY);
+    if (!raw) return null;
+    const { ip, ts } = JSON.parse(raw);
+    // 多一层保险：如果 KV 的 expiration 失效了，也检查时间戳
+    if (Date.now() - ts > KV_TTL_SEC * 1000) return null;
+    return ip;
+  } catch { return null; }
+}
+
+/** 把探测到的 IP 写回 KV，并设置 1 h 过期 */
+async function kvPutProxyIP(kv, ip) {
+  const payload = JSON.stringify({ ip, ts: Date.now() });
+  await kv.put(KV_KEY, payload, { expirationTtl: KV_TTL_SEC });
+}
+// -------------------- 新增结束 --------------------
+
+
 
 
 // -------------------- 新增：动态解析 proxyip.cmliussss.net --------------------
@@ -29,32 +56,41 @@ async function pickAliveIP(ips) {
   return null;
 }
 
-/** 冷启动或过期时刷新 proxyIP */
-async function refreshProxyIP() {
-  const now = Date.now();
-  if (now - lastUpdateTs < CACHE_TTL) return;     // 1 h 内直接复用
+/** 冷启动或过期时刷新 proxyIP，先读 KV，没有再探测 */
+async function refreshProxyIP(kv) {
+  // 1. 先看 KV 有没有
+  const cached = await kvGetProxyIP(kv);
+  if (cached) {
+    cachedProxyIP = cached;          // 内存也留一份，减少 await 次数
+    lastUpdateTs = Date.now();
+    console.log(`[refreshProxyIP] use KV cached ${cached}`);
+    return;
+  }
+
+  // 2. KV 没有，才去 DNS 解析 + 探测
   try {
-    // 用 Cloudflare 自带的 DNS over HTTPS
     const resp = await fetch(
       `https://cloudflare-dns.com/dns-query?name=${PROXY_HOST}&type=A`,
       { headers: { Accept: 'application/dns-json' } }
     );
     const data = await resp.json();
     const ips = (data.Answer || [])
-      .filter(r => r.type === 1)   // A 记录
+      .filter(r => r.type === 1)
       .map(r => r.data);
     if (ips.length) {
       const ok = await pickAliveIP(ips);
       if (ok) {
         cachedProxyIP = ok;
-        lastUpdateTs = now;
-         console.log(`[refreshProxyIP] picked ${ok}`);
+        lastUpdateTs = Date.now();
+        await kvPutProxyIP(kv, ok);   // 写回 KV
+        console.log(`[refreshProxyIP] picked & saved ${ok}`);
       }
     }
   } catch (e) {
     console.log('[refreshProxyIP] err', e);
   }
 }
+
 // -------------------- 新增结束 --------------------
 
 
@@ -74,9 +110,10 @@ const worker_default = {
         try {
            // proxyIP = env.PROXYIP || proxyIP;
             sha224Password = env.SHA224PASS || sha224Password
-
+    
     /* ---------- 新增：后台刷新 proxyIP ---------- */
-    ctx.waitUntil(refreshProxyIP());   // 非阻塞
+ 
+       ctx.waitUntil(refreshProxyIP(a));   // 非阻塞
     if (cachedProxyIP) proxyIP = cachedProxyIP; // 如有缓存优先用
     /* ---------- 新增结束 ------------------------ */
 
