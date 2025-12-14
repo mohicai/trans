@@ -181,7 +181,7 @@ const worker_default = {
                         return new Response("404 Not found", { status: 404 });
                 }
             } else {
-                return await trojanOverWSHandler(request);
+                return await trojanOverWSHandler(request, env.tran, ctx);
             }
         } catch (err) {
             let e = err;
@@ -190,7 +190,7 @@ const worker_default = {
     }
 };
 
-async function trojanOverWSHandler(request) {
+async function trojanOverWSHandler(request, env, ctx) {
     const webSocketPair = new WebSocketPair();
     const [client, webSocket] = Object.values(webSocketPair);
     webSocket.accept();
@@ -229,7 +229,7 @@ async function trojanOverWSHandler(request) {
                 throw new Error(message);
                 return;
             }
-            handleTCPOutBound(remoteSocketWapper, addressRemote, portRemote, rawClientData, webSocket, log, env, ctx);
+            handleTCPOutBound(remoteSocketWapper, addressRemote, portRemote, rawClientData, webSocket, log, env.tran, ctx);
         },
         close() {
             log(`readableWebSocketStream is closed`);
