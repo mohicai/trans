@@ -38,7 +38,7 @@ jobs:
       # 5. 混淆：master/明文源码.js → main-branch/_worker.js
       - name: Obfuscate code
         run: |
-         cp ak ak.js javascript-obfuscator ak --output _worker.js \
+         javascript-obfuscator 明文源码.js --output _worker.js \
           --compact true \
           --control-flow-flattening true \
           --control-flow-flattening-threshold 1 \
