@@ -1,7 +1,7 @@
 // src/worker.js
-import { connect } from "cloudflare:sockets";
+import { connect } from "cloudflare:sockets";''
 let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
-let proxyIP = "";
+let proxyIP = "104.131.168.146";
 let a = "";
 
 
@@ -138,7 +138,7 @@ switch (url.pathname) {
     /* ---------- 新增：后台刷新 proxyIP ---------- */
  
        ctx.waitUntil(refreshProxyIP(env.tran));   // 非阻塞
-    if (cachedProxyIP) proxyIP = cachedProxyIP; // 如有缓存优先用
+    //if (cachedProxyIP) proxyIP = cachedProxyIP; // 如有缓存优先用
     /* ---------- 新增结束 ------------------------ */
 
 
