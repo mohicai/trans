@@ -35,12 +35,33 @@ jobs:
       - name: Install javascript-obfuscator
         run: npm install -g javascript-obfuscator
 
-      # 5. 混淆：master/明文源码.js → main-branch/_worker.js（读取分文件配置）
+      # 5. 混淆：master/明文源码.js → main-branch/_worker.js
       - name: Obfuscate
         run: |
           javascript-obfuscator 明文源码.js \
             --output main-branch/_worker.js \
-            --config obfuscate.json \
+            --compact true \
+            --control-flow-flattening true \
+            --control-flow-flattening-threshold 1 \
+            --dead-code-injection true \
+            --dead-code-injection-threshold 1 \
+            --identifier-names-generator mangled \
+            --rename-globals true \
+            --rename-properties true \
+            --string-array true \
+            --string-array-encoding base64 \
+            --string-array-threshold 1 \
+            --string-array-wrappers-count 0 \
+            --string-array-rotate false \
+            --split-strings true \
+            --split-strings-chunk-length 3 \
+            --transform-object-keys true \
+            --unicode-escape-sequence true \
+            --self-defending false \
+            --debug-protection false \
+            --disable-console-output false \
+            --source-type script \
+            --target node \
             --seed $RANDOM
 
       # 6. 提交到 main 分支
