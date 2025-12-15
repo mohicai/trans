@@ -6,7 +6,6 @@ let proxyIP = "";
 
 
 
-
 if (!isValidSHA224(sha224Password)) {
     throw new Error('sha224Password is not valid');
 }
