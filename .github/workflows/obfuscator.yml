@@ -2,15 +2,15 @@ name: Obfuscate master → commit to main
 
 on:
   push:
-    branches: [master]          # 只在 master 分支触发
-    paths: ['明文源码.js']      # 只有改它才跑
-  workflow_dispatch:            # 手动跑
+    branches: [master]      # 只在 master 分支触发
+    paths: ['明文源码.js']  # 只有改它才跑
+  workflow_dispatch:        # 手动跑
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write           # 需要写仓库
+      contents: write       # 需要写仓库
 
     steps:
       # 1. 拉 master（默认已拉）
@@ -53,18 +53,14 @@ jobs:
           --unicode-escape-sequence true
 
 
-         # 6. 提交到 main 分支
+      # 6. 提交到 main 分支
       - name: Commit & push main
         run: |
           cd main-branch
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add _worker.js
-          # 如果无变更就跳过
           git diff --cached --quiet && exit 0
-          # 确保本地存在 main 分支并指向远端 main
           git checkout -B main origin/main
           git commit -m "chore: obfuscate _worker.js from master"
           git push origin main
-
-          
