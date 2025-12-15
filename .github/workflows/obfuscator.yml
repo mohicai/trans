@@ -64,7 +64,7 @@ jobs:
             --domain-lock "${{ github.event.repository.owner.login }}.github.io" \
             --seed $RANDOM
 
-            # 6. 提交到 main 分支
+         # 6. 提交到 main 分支
       - name: Commit & push main
         run: |
           cd main-branch
