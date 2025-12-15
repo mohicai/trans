@@ -122,7 +122,6 @@ const worker_default = {
             sha224Password = env.SHA224PASS || sha224Password
 
 
-
 const url = new URL(request.url);
 switch (url.pathname) {
   case '/write':                       // ← 新增
