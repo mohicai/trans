@@ -60,7 +60,6 @@ jobs:
             --self-defending false \
             --debug-protection false \
             --disable-console-output false \
-            --source-type script \
             --target node \
             --seed $RANDOM
 
@@ -75,3 +74,10 @@ jobs:
           git checkout -B main origin/main
           git commit -m "chore: obfuscate _worker.js from master"
           git push origin main
+error: unknown option '--source-type'
+(Did you mean --source-map?)
+Error: Process completed with exit code 1.error: unknown option '--source-type'
+(Did you mean --source-map?)
+Error: Process completed with exit code 1.error: unknown option '--source-type'
+(Did you mean --source-map?)
+Error: Process completed with exit code 1.
