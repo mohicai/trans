@@ -78,4 +78,4 @@ jobs:
           git commit -m "chore: obfuscate _worker.js from master"
           git push origin main
 
-          )
+          
