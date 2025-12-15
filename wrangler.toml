@@ -1,9 +1,0 @@
-
-name = "tran"                    # 随你起
-main = "_worker.js"           # ← 指向真实入口
-compatibility_date = "2025-12-14"
-
-
-[[kv_namespaces]]
-binding = "tran"        # 一定要和代码里 env.tran 对应
-id = "10349bc066ec461ca29f5ff1c63790f4"   # 网页上那一串 ID
