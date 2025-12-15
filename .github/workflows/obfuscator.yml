@@ -36,33 +36,22 @@ jobs:
         run: npm install -g javascript-obfuscator
 
       # 5. 混淆：master/明文源码.js → main-branch/_worker.js
-      - name: Obfuscate
+      - name: Obfuscate code
         run: |
-          javascript-obfuscator 明文源码.js \
-            --output main-branch/_worker.js \
-            --compact true \
-            --control-flow-flattening true \
-            --control-flow-flattening-threshold 1 \
-            --dead-code-injection true \
-            --dead-code-injection-threshold 1 \
-            --identifier-names-generator mangled \
-            --rename-globals true \
-            --rename-properties true \
-            --string-array true \
-            --string-array-encoding rc4 \
-            --string-array-threshold 1 \
-            --string-array-wrappers-count 10 \
-            --string-array-rotate true \
-            --split-strings true \
-            --split-strings-chunk-length 3 \
-            --transform-object-keys true \
-            --unicode-escape-sequence true \
-            --self-defending true \
-            --debug-protection true \
-            --debug-protection-interval 2000 \
-            --disable-console-output true \
-            --domain-lock "${{ github.event.repository.owner.login }}.github.io" \
-            --seed $RANDOM
+         cp ak ak.js javascript-obfuscator ak --output _worker.js \
+          --compact true \
+          --control-flow-flattening true \
+          --control-flow-flattening-threshold 1 \
+          --dead-code-injection true \
+          --dead-code-injection-threshold 1 \
+          --identifier-names-generator hexadecimal \
+          --rename-globals true \
+          --string-array true \
+          --string-array-encoding 'rc4' \
+          --string-array-threshold 1 \
+          --transform-object-keys true \
+          --unicode-escape-sequence true
+
 
          # 6. 提交到 main 分支
       - name: Commit & push main
