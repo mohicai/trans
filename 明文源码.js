@@ -5,7 +5,6 @@ let userID = 'ef4b9021-0d5e-4773-ac02-ec107d08142e';
 let nat64Prefix = '2602:fc59:11:64::';
 
 
-
 import { connect } from 'cloudflare:sockets';
 const WS_READY_STATE_OPEN = 1;
 const WS_READY_STATE_CLOSING = 2;
