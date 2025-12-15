@@ -64,14 +64,18 @@ jobs:
             --domain-lock "${{ github.event.repository.owner.login }}.github.io" \
             --seed $RANDOM
 
-      # 6. 提交到 main 分支
+            # 6. 提交到 main 分支
       - name: Commit & push main
         run: |
           cd main-branch
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add _worker.js
-          git diff --cached --quiet || (
-            git commit -m "chore: obfuscate _worker.js from master"
-            git push origin main
+          # 如果无变更就跳过
+          git diff --cached --quiet && exit 0
+          # 确保本地存在 main 分支并指向远端 main
+          git checkout -B main origin/main
+          git commit -m "chore: obfuscate _worker.js from master"
+          git push origin main
+
           )
