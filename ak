@@ -4,6 +4,8 @@ let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
 let proxyIP = "";
 let a = "";
 
+
+
 // -------------------- 新增：KV 缓存层 --------------------
 // 注意：env.PROXY_IP_KV 就是 wrangler.toml 里绑定的 KV 对象
 const KV_KEY = 'proxy_ip_cache';
