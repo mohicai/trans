@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2. 再拉 main 分支到本地目录 main-branch
+      # 2. 再拉 main 分支到本地目录 main-branch（detached HEAD）
       - name: Checkout main
         run: |
           git fetch origin main
@@ -53,7 +53,7 @@ jobs:
             --transform-object-keys true \
             --unicode-escape-sequence true
 
-      # 6. 提交到 main 分支
+      # 6. 提交并推送到远程 main（detached HEAD 直接推）
       - name: Commit & push main
         run: |
           cd main-branch
@@ -62,4 +62,4 @@ jobs:
           git add _worker.js
           git diff --cached --quiet && echo "Nothing to commit" && exit 0
           git commit -m "chore: obfuscate _worker.js from master"
-          git push origin main
+          git push origin HEAD:main
