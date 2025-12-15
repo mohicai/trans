@@ -10,6 +10,7 @@ let userID = 'ef4b9021-0d5e-4773-ac02-ec107d08142e';
 let NAT64_PREFIX = '2602:fc59:b0:64::'; // https://nat64.xyz
 
 
+
 if (!isValidUUID(userID)) {
 	throw new Error('uuid is not valid');
 }
