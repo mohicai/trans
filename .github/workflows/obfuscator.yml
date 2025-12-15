@@ -2,15 +2,15 @@ name: Obfuscate master → commit to main
 
 on:
   push:
-    branches: [master]          # 只在 master 分支触发
-    paths: ['明文源码.js']      # 只有改它才跑
-  workflow_dispatch:            # 手动跑
+    branches: [master]      # 只在 master 分支触发
+    paths: ['明文源码.js']  # 只有改它才跑
+  workflow_dispatch:        # 手动跑
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write           # 需要写仓库
+      contents: write       # 需要写仓库
 
     steps:
       # 1. 拉 master（默认已拉）
@@ -39,21 +39,21 @@ jobs:
       - name: Obfuscate
         run: |
           javascript-obfuscator 明文源码.js \
-  --output main-branch/_worker.js \
-  --compact true \
-  --control-flow-flattening false \
-  --dead-code-injection false \
-  --identifier-names-generator hexadecimal \
-  --rename-globals true \
-  --string-array true \
-  --string-array-encoding base64 \
-  --string-array-threshold 1 \
-  --split-strings true \
-  --split-strings-chunk-length 3 \
-  --transform-object-keys true \
-  --unicode-escape-sequence true \
-  --target node \
-  --seed $RANDOM 
+            --output main-branch/_worker.js \
+            --compact true \
+            --control-flow-flattening false \
+            --dead-code-injection false \
+            --identifier-names-generator hexadecimal \
+            --rename-globals true \
+            --string-array true \
+            --string-array-encoding base64 \
+            --string-array-threshold 1 \
+            --split-strings true \
+            --split-strings-chunk-length 3 \
+            --transform-object-keys true \
+            --unicode-escape-sequence true \
+            --target node \
+            --seed $RANDOM
 
       # 6. 提交到 main 分支
       - name: Commit & push main
