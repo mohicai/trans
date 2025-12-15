@@ -13,9 +13,9 @@ jobs:
       contents: write       # 需要写仓库
 
     steps:
-      # 1. 拉 master（默认已拉）
+      # 1. 检出 master（默认已拉）
       - name: Checkout master
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -25,33 +25,33 @@ jobs:
           git fetch origin main
           git worktree add main-branch origin/main
 
-      # 3. 装 Node 16
+      # 3. 装 Node 18
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: 18
 
       # 4. 装混淆器
       - name: Install javascript-obfuscator
         run: npm install -g javascript-obfuscator
 
-      # 5. 混淆：master/明文源码.js → main-branch/_worker.js
+      # 5. 混淆：明文源码.js → main-branch/_worker.js
       - name: Obfuscate code
         run: |
-         javascript-obfuscator 明文源码.js --output _worker.js \
-          --compact true \
-          --control-flow-flattening true \
-          --control-flow-flattening-threshold 1 \
-          --dead-code-injection true \
-          --dead-code-injection-threshold 1 \
-          --identifier-names-generator hexadecimal \
-          --rename-globals true \
-          --string-array true \
-          --string-array-encoding 'rc4' \
-          --string-array-threshold 1 \
-          --transform-object-keys true \
-          --unicode-escape-sequence true
-
+          javascript-obfuscator 明文源码.js \
+            --output main-branch/_worker.js \
+            --compact true \
+            --control-flow-flattening true \
+            --control-flow-flattening-threshold 1 \
+            --dead-code-injection true \
+            --dead-code-injection-threshold 1 \
+            --identifier-names-generator hexadecimal \
+            --rename-globals true \
+            --string-array true \
+            --string-array-encoding 'rc4' \
+            --string-array-threshold 1 \
+            --transform-object-keys true \
+            --unicode-escape-sequence true
 
       # 6. 提交到 main 分支
       - name: Commit & push main
@@ -60,7 +60,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add _worker.js
-          git diff --cached --quiet && exit 0
-          git checkout -B main origin/main
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
           git commit -m "chore: obfuscate _worker.js from master"
           git push origin main
