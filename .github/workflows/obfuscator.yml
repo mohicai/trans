@@ -1,68 +1,55 @@
-name: Obfuscate master → commit to main
+name: Obfuscate and Commit
 
 on:
-  push:
-    branches: [master]      # 只在 master 分支触发
-    paths: ['明文源码.js']  # 只有改它才跑
-  workflow_dispatch:        # 手动跑
+    #push:
+    #    paths:
+    #        - '明文源码.js'
+    workflow_dispatch:
 
 jobs:
-  build:
+  obfuscate:
     runs-on: ubuntu-latest
     permissions:
-      contents: write       # 需要写仓库
+      contents: write
 
     steps:
-      # 1. 拉 master（默认已拉）
-      - name: Checkout master
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 2. 再拉 main 分支到本地目录 main-branch
-      - name: Checkout main
-        run: |
-          git fetch origin main
-          git worktree add main-branch origin/main
-
-      # 3. 装 Node 16
-      - name: Setup Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: "16"
 
-      # 4. 装混淆器
-      - name: Install javascript-obfuscator
+      - name: Install dependencies
         run: npm install -g javascript-obfuscator
 
-      # 5. 混淆：master/明文源码.js → main-branch/_worker.js
-      - name: Obfuscate
+      - name: Obfuscate code
         run: |
-          javascript-obfuscator 明文源码.js \
-            --output main-branch/_worker.js \
-            --compact true \
-            --control-flow-flattening false \
-            --dead-code-injection false \
-            --identifier-names-generator hexadecimal \
-            --rename-globals true \
-            --string-array true \
-            --string-array-encoding base64 \
-            --string-array-threshold 1 \
-            --split-strings true \
-            --split-strings-chunk-length 3 \
-            --transform-object-keys true \
-            --unicode-escape-sequence true \
-            --target node \
-            --seed $RANDOM
+          javascript-obfuscator 明文源码.js --output _worker.js \
+          --compact true \
+          --control-flow-flattening true \
+          --control-flow-flattening-threshold 1 \
+          --dead-code-injection true \
+          --dead-code-injection-threshold 1 \
+          --identifier-names-generator hexadecimal \
+          --rename-globals true \
+          --string-array true \
+          --string-array-encoding 'rc4' \
+          --string-array-threshold 1 \
+          --transform-object-keys true \
+          --unicode-escape-sequence true
 
-      # 6. 提交到 main 分支
-      - name: Commit & push main
+      - name: Commit changes
         run: |
-          cd main-branch
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add _worker.js
-          git diff --cached --quiet && exit 0
-          git checkout -B main origin/main
-          git commit -m "chore: obfuscate _worker.js from master"
-          git push origin main
+          git commit -m "Obfuscate _worker.js" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
