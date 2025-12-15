@@ -2,15 +2,15 @@ name: Obfuscate master → commit to main
 
 on:
   push:
-    branches: [master]          # 只在 master 分支触发
-    paths: ['明文源码.js']       # 只有改它才跑
-  workflow_dispatch:            # 手动跑
+    branches: [master]      # 只在 master 分支触发
+    paths: ['明文源码.js']  # 只有改它才跑
+  workflow_dispatch:        # 手动跑
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write           # 需要写仓库
+      contents: write       # 需要写仓库
 
     steps:
       # 1. 检出 master（默认已拉）
@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2. 再拉 main 分支到本地目录 main-branch
+      # 2. 再拉 main 分支到本地目录 main-branch（detached HEAD）
       - name: Checkout main
         run: |
           git fetch origin main
@@ -35,7 +35,7 @@ jobs:
       - name: Install javascript-obfuscator
         run: npm install -g javascript-obfuscator
 
-      # 5. 混淆：明文源码.js → main-branch/_worker.js
+      # 5. 混淆：明文源码.js → main-branch/_worker.js（已替换为加强版参数）
       - name: Obfuscate code
         run: |
           javascript-obfuscator 明文源码.js \
@@ -60,7 +60,7 @@ jobs:
             --transform-object-keys true \
             --unicode-escape-sequence true
 
-      # 6. 提交到 main 分支
+      # 6. 提交并推送到远程 main（detached HEAD 直接推）
       - name: Commit & push main
         run: |
           cd main-branch
@@ -69,4 +69,4 @@ jobs:
           git add _worker.js
           git diff --cached --quiet && echo "Nothing to commit" && exit 0
           git commit -m "chore: obfuscate _worker.js from master"
-          git push origin main
+          git push origin HEAD:main
