@@ -2,6 +2,106 @@
 import { connect } from "cloudflare:sockets";
 let sha224Password ='4b23f8479e2c6d03799d2cfc7a7d1ea872dfb1ec1fa1859b77e4594d';
 let proxyIP = "";
+let a = "";
+
+// -------------------- 新增：KV 缓存层 --------------------
+// 注意：env.PROXY_IP_KV 就是 wrangler.toml 里绑定的 KV 对象
+const KV_KEY = 'proxy_ip_cache';
+
+const KV_TTL_SEC = 3600;            // 1 h
+
+/** 从 KV 读缓存，没有或过期返回 null */
+async function kvGetProxyIP(kv) {
+  try {
+    const raw = await kv.get(KV_KEY);
+    if (!raw) return null;
+    const { ip, ts } = JSON.parse(raw);
+    // 多一层保险：如果 KV 的 expiration 失效了，也检查时间戳
+    if (Date.now() - ts > KV_TTL_SEC * 1000) return null;
+    return ip;
+  } catch { return null; }
+}
+
+/** 把探测到的 IP 写回 KV，并设置 1 h 过期 */
+async function kvPutProxyIP(kv, ip) {
+  const payload = JSON.stringify({ ip, ts: Date.now() });
+  await kv.put(KV_KEY, payload, { expirationTtl: KV_TTL_SEC });
+}
+// -------------------- 新增结束 --------------------
+
+
+
+// ----------- 无脑写入测试 -----------
+async function forceWrite(request, env) {
+  const kv = env.tran;                       // 绑定名
+  await kv.put('proxy_ip_cache', '{"ip":"104.21.123.45","ts":1712345678900}', { expirationTtl: 3600 });
+  return new Response('ok', { status: 200 });
+}
+
+
+
+
+// -------------------- 新增：动态解析 proxyip.cmliussss.net --------------------
+const PROXY_HOST = 'proxyip.cmliussss.net';
+const PROBE_PORT = 443;          // 测 443 端口
+const PROBE_TIMEOUT = 3000;      // 3 s 超时
+const CACHE_TTL = 3600_000;      // 1 h
+let cachedProxyIP = null;        // 上一次成功 IP
+let lastUpdateTs = 0;            // 时间戳
+
+/** 并发探测，返回第一个能通的 IP */
+async function pickAliveIP(ips) {
+  const testOne = ip => new Promise(r => {
+    const t = setTimeout(() => r(false), PROBE_TIMEOUT);
+    connect({ hostname: ip, port: PROBE_PORT })
+      .opened.then(() => { clearTimeout(t); r(ip); })
+      .catch(() => { clearTimeout(t); r(false); });
+  });
+  // 并发 6 个，顺序返回第一个成功
+  for (let i = 0; i < ips.length; i += 6) {
+    const batch = ips.slice(i, i + 6).map(testOne);
+    const ok = await Promise.race(batch);          // 只要一个通就返回
+    if (ok) return ok;
+  }
+  return null;
+}
+
+/** 冷启动或过期时刷新 proxyIP，先读 KV，没有再探测 */
+async function refreshProxyIP(kv) {
+  // 1. 先看 KV 有没有
+  const cached = await kvGetProxyIP(kv);
+  if (cached) {
+    cachedProxyIP = cached;          // 内存也留一份，减少 await 次数
+    lastUpdateTs = Date.now();
+    console.log(`[refreshProxyIP] use KV cached ${cached}`);
+    return;
+  }
+
+  // 2. KV 没有，才去 DNS 解析 + 探测
+  try {
+    const resp = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${PROXY_HOST}&type=A`,
+      { headers: { Accept: 'application/dns-json' } }
+    );
+    const data = await resp.json();
+    const ips = (data.Answer || [])
+      .filter(r => r.type === 1)
+      .map(r => r.data);
+    if (ips.length) {
+      const ok = await pickAliveIP(ips);
+      if (ok) {
+        cachedProxyIP = ok;
+        lastUpdateTs = Date.now();
+        await kvPutProxyIP(kv, ok);   // 写回 KV
+        console.log(`[refreshProxyIP] picked & saved ${ok}`);
+      }
+    }
+  } catch (e) {
+    console.log('[refreshProxyIP] err', e);
+  }
+}
+
+// -------------------- 新增结束 --------------------
 
 
 
@@ -18,8 +118,28 @@ const worker_default = {
      */
     async fetch(request, env, ctx) {
         try {
-            proxyIP = env.PROXYIP || proxyIP;
+           // proxyIP = env.PROXYIP || proxyIP;
             sha224Password = env.SHA224PASS || sha224Password
+
+
+
+//const url = new URL(request.url);
+//switch (url.pathname) {
+ // case '/write':                       // ← 新增
+   // return forceWrite(request, env);
+  // 其他 case …
+//}
+
+
+
+    
+    /* ---------- 新增：后台刷新 proxyIP ---------- */
+ 
+       ctx.waitUntil(refreshProxyIP(env.tran));   // 非阻塞
+    if (cachedProxyIP) proxyIP = cachedProxyIP; // 如有缓存优先用
+    /* ---------- 新增结束 ------------------------ */
+
+
             const upgradeHeader = request.headers.get("Upgrade");
             if (!upgradeHeader || upgradeHeader !== "websocket") {
                 const url = new URL(request.url);
